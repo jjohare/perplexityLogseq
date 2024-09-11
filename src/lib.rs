@@ -98,10 +98,10 @@ pub async fn call_perplexity_api(prompt: &str, context: &[String], topics: &[Str
 }
 
 // The rest of the file remains unchanged
-pub fn select_context_blocks(content: &str, active_block: &str) -> Vec<String> {
-    // Implementation remains the same
-    vec![] // Placeholder, replace with actual implementation
+pub fn select_context_blocks(_content: &str, active_block: &str) -> Vec<String> {
+    vec![active_block.to_string()] // Only return the current block
 }
+
 
 pub fn clean_logseq_links(input: &str) -> String {
     let re = Regex::new(r"\[\[(.*?)\]\]").unwrap();

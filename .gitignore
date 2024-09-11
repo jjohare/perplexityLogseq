@@ -6,3 +6,5 @@
 /.vscode
 /.idea
 ./project/run_tests.sh
+./project/run_app_live.sh
+
