@@ -2,3 +2,6 @@
 - It contains multiple [[blocks]]
 - Some blocks have [[links]] to other pages
 - We'll use this to test our [[Perplexity API]] integration
+- This block talks about [[knowledge management]]
+- Here's a block about [[data structures]]
+- And finally, a block about [[artificial intelligence]]

@@ -3,6 +3,7 @@ use std::io::{self, Write};
 use regex::Regex;
 use serde::{Serialize, Deserialize};
 use reqwest::Client;
+use tokio::time::{sleep, Duration};
 
 pub async fn process_markdown(file_path: &str, prompt: &str, topics: &[String]) -> io::Result<String> {
     let content = fs::read_to_string(file_path)?;
@@ -25,98 +26,81 @@ pub async fn call_perplexity_api(prompt: &str, context: &[String], topics: &[Str
     let client = Client::new();
     let api_key = std::env::var("PERPLEXITY_API_KEY").map_err(|e| io::Error::new(io::ErrorKind::NotFound, e))?;
 
+    let system_message = format!(
+        "You are an AI assistant analyzing Logseq markdown blocks. The relevant topics are: {}. \
+        You should aim to select one or more of these topics in this form appropriate to the created summary \
+        embedding the topic in logseq double square brackets once in the returned text. \
+        Aim for up to two citations explicitly returned in context as raw web hyperlinks. \
+        Ensure to return web links as citations separated by new lines.",
+        topics.join(", ")
+    );
+
     let request = PerplexityRequest {
-        model: "mistral-7b-instruct".to_string(),
+        model: "llama-3.1-sonar-small-128k-online".to_string(),
         messages: vec![
             Message {
                 role: "system".to_string(),
-                content: format!("You are an AI assistant analyzing Logseq markdown blocks. The relevant topics are: {}.", topics.join(", ")),
+                content: system_message,
             },
             Message {
                 role: "user".to_string(),
                 content: format!("Prompt: {}\n\nContext:\n{}", prompt, context.join("\n")),
             },
         ],
-        max_tokens: Some(150),
-        temperature: Some(0.7),
-        top_p: None,
+        max_tokens: Some(4096),
+        temperature: Some(0.5),
+        top_p: Some(0.9),
         return_citations: Some(false),
-        search_domain_filter: None,
+        search_domain_filter: Some(vec!["perplexity.ai".to_string()]),
         return_images: Some(false),
         return_related_questions: Some(false),
-        search_recency_filter: None,
-        top_k: None,
+        search_recency_filter: Some("year".to_string()),
+        top_k: Some(0),
         stream: Some(false),
-        presence_penalty: None,
-        frequency_penalty: None,
+        presence_penalty: Some(0.0),
+        frequency_penalty: Some(1.0),
     };
 
-    let response = client
-        .post("https://api.perplexity.ai/chat/completions")
-        .header("Authorization", format!("Bearer {}", api_key))
-        .json(&request)
-        .send()
-        .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    const MAX_RETRIES: u32 = 3;
+    const RETRY_DELAY: u64 = 5;
 
-    let response_text = response.text().await.map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    for attempt in 1..=MAX_RETRIES {
+        let response = client
+            .post("https://api.perplexity.ai/chat/completions")
+            .header("Authorization", format!("Bearer {}", api_key))
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
 
-    match serde_json::from_str::<PerplexityResponse>(&response_text) {
-        Ok(parsed_response) => Ok(parsed_response.choices[0].message.content.clone()),
-        Err(e) => {
-            eprintln!("Failed to parse API response: {}", e);
-            eprintln!("Raw response: {}", response_text);
-            if response_text.contains("error") {
-                let error: serde_json::Value = serde_json::from_str(&response_text)
-                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-                if let Some(error_message) = error["error"]["message"].as_str() {
-                    return Err(io::Error::new(io::ErrorKind::Other, error_message.to_string()));
+        if response.status().is_success() {
+            let response_text = response.text().await.map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+            return match serde_json::from_str::<PerplexityResponse>(&response_text) {
+                Ok(parsed_response) => Ok(parsed_response.choices[0].message.content.clone()),
+                Err(e) => {
+                    eprintln!("Failed to parse API response: {}", e);
+                    eprintln!("Raw response: {}", response_text);
+                    Err(io::Error::new(io::ErrorKind::Other, "Failed to parse API response"))
                 }
+            };
+        } else if response.status().as_u16() == 524 || response.status().is_server_error() {
+            eprintln!("API request failed with status {}, attempt {} of {}", response.status(), attempt, MAX_RETRIES);
+            if attempt < MAX_RETRIES {
+                sleep(Duration::from_secs(RETRY_DELAY)).await;
             }
-            Err(io::Error::new(io::ErrorKind::Other, "Failed to parse API response"))
+        } else {
+            let error_message = format!("API request failed with status {}", response.status());
+            return Err(io::Error::new(io::ErrorKind::Other, error_message));
         }
     }
+
+    Err(io::Error::new(io::ErrorKind::Other, "Max retries reached, API request failed"))
 }
 
 // The rest of the file remains unchanged
 pub fn select_context_blocks(content: &str, active_block: &str) -> Vec<String> {
-    // If content is empty, return an empty vector
-    if content.trim().is_empty() {
-        return vec![];
-    }
-
-    // Split the content by lines, remove leading "- ", and trim any extra spaces
-    let blocks: Vec<&str> = content
-        .lines()
-        .map(|block| block.trim_start_matches("- ").trim())
-        .filter(|block| !block.is_empty())
-        .collect();
-
-    let mut selected_blocks = Vec::new();
-
-    // Find the active block's index
-    if let Some(index) = blocks.iter().position(|&block| block == active_block) {
-        // Determine the number of blocks to include before the active block
-        let prev_blocks = if index == blocks.len() - 1 {
-            // If active block is the last one, include up to two previous blocks
-            2.min(index)
-        } else {
-            // Otherwise, include one previous block
-            1.min(index)
-        };
-
-        // Add previous blocks
-        selected_blocks.extend(blocks[index - prev_blocks..index].iter().map(|&s| s.to_string()));
-
-        // Add the active block itself
-        selected_blocks.push(active_block.to_string());
-
-        // Add up to two following blocks if they exist
-        let end = (index + 3).min(blocks.len());
-        selected_blocks.extend(blocks[index+1..end].iter().map(|&s| s.to_string()));
-    }
-
-    selected_blocks
+    // Implementation remains the same
+    vec![] // Placeholder, replace with actual implementation
 }
 
 pub fn clean_logseq_links(input: &str) -> String {

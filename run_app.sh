@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the Perplexity API key
-export PERPLEXITY_API_KEY="pplx-"
+export PERPLEXITY_API_KEY="pplx"
 
 # Check if all arguments are provided
 if [ "$#" -ne 4 ]; then
