@@ -27,14 +27,15 @@ pub async fn call_perplexity_api(prompt: &str, context: &[String], topics: &[Str
     let api_key = std::env::var("PERPLEXITY_API_KEY").map_err(|e| io::Error::new(io::ErrorKind::NotFound, e))?;
 
     let system_message = format!(
-        "You are an AI assistant analyzing Logseq markdown blocks. The relevant topics are: {}. \
-        You should aim to select one or more of these topics in this form appropriate to the created summary \
-        embedding the topic in logseq double square brackets once in the returned text. \
-        Aim for up to two citations explicitly returned in context as raw web hyperlinks. \
-        Ensure to return web links as citations separated by new lines.",
+        "You are an AI assistant analyzing Logseq markdown blocks. You will visit any web links found in the text and integrate \
+        a summary with web citations, aiming for up to two citations explicitly returned in context as raw web hyperlinks. \
+        Ensure to return web links as citations separated by new lines. \
+        You should aim to select one or more of these topics in this form appropriate to the created summary, \
+        embedding the topic in Logseq double square brackets once in the returned text. \
+        Relevant category topics are: {}.",
         topics.join(", ")
     );
-
+    
     let request = PerplexityRequest {
         model: "llama-3.1-sonar-small-128k-online".to_string(),
         messages: vec![
@@ -51,7 +52,7 @@ pub async fn call_perplexity_api(prompt: &str, context: &[String], topics: &[Str
         temperature: Some(0.5),
         top_p: Some(0.9),
         return_citations: Some(false),
-        search_domain_filter: Some(vec!["perplexity.ai".to_string()]),
+        search_domain_filter: Some(vec!["all".to_string()]),
         return_images: Some(false),
         return_related_questions: Some(false),
         search_recency_filter: Some("year".to_string()),
