@@ -27,7 +27,7 @@ pub async fn call_perplexity_api(prompt: &str, context: &[String], topics: &[Str
     let api_key = std::env::var("PERPLEXITY_API_KEY").map_err(|e| io::Error::new(io::ErrorKind::NotFound, e))?;
 
     let system_message = format!(
-        "You are an AI assistant analyzing Logseq markdown blocks. You will visit any web links found in the text and integrate \
+        "You are an AI assistant building summaries of web links and text. You will visit any web links found in the text and integrate \
         a summary with web citations, aiming for up to two citations explicitly returned in context as raw web hyperlinks. \
         Ensure to return web links as citations separated by new lines. \
         You should aim to select one or more of these topics in this form appropriate to the created summary, \

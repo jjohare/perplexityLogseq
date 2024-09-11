@@ -1,30 +1,22 @@
 - ```
 [FAQ (radicle.xyz)](https://radicle.xyz/faq)
 ```
-### Summary of Logseq Markdown Block
+### Summary of Radicle and Related Content
 
-Logseq is a powerful note-taking and outlining tool that uses markdown for formatting its text. Here is a brief summary of the content and links relevant to Logseq markdown:
+Radicle is a peer-to-peer code collaboration platform built on top of Git, designed to provide a decentralized alternative to centralized platforms like GitHub. Here is a brief summary of the key points:
 
-- **Logseq Plugins**: Logseq plugins are installed at the user level in the `~/.logseq/plugins/` directory. Each plugin's `package.json` holds important project information, and installation-specific settings are under `~/.logseq/settings`. A Nushell script can be used to update the list of installed plugins and generate summary strings for each plugin.
+- **Decentralized Collaboration**: Radicle operates in a decentralized manner, where repositories are replicated across peers, and users have full control over their data and workflow.
+- **Open Source and Licensing**: The platform is open source and licensed under the MIT and Apache 2.0 licenses, ensuring that the protocol and clients remain free software.
+- **Community Governance**: Radicle is part of the Radworks ecosystem, which uses both on- and off-chain governance mechanisms to make decisions as a community.
+- **User Experience**: Users can seed repositories, contributing bandwidth, storage, and data availability to the network, similar to torrenting.
+- **History and Funding**: The Radicle project has been in development for over four years, with the current codebase being around two years old. It is currently funded by Radworks, which has provided around $7 million in grants.
 
-- **Namespace Structure**: The current namespace implementation in Logseq can be problematic for users who prefer a hierarchical structure. Some users find it distracting and harder to read, especially when dealing with nested files and folders. There is a proposal to change how namespaces function to better align with the file system hierarchy.
+### Links and Citations
 
-- **Logseq Markdown Cheat Sheet**: Logseq uses markdown syntax for formatting its text. A cheat sheet is available for quick reference, covering elements such as headings, bold text, italics, underlines, strikethroughs, blockquotes, links, embeds, unordered and numbered lists, tasks, tables, footnotes, tags, code blocks, horizontal rules, images, and highlights.
+For more detailed information, you can refer to the following resources:
 
-- **Compatibility Issues**: Logseq's markdown encoding is not fully compatible with pure markdown. This can cause issues when trying to switch to another app that uses standard markdown. However, Logseq's structure is still human-readable and open-source, making it easier to convert notes to other formats.
+- **Radicle Documentation**: For an in-depth look at how Radicle works, including guides on setting up a node and integrating with other tools, visit the Radicle Guides.
+- **FAQ**: For general questions about Radicle, including its differences from Git/GitHub and its current status, check out Radicle's FAQ.
+- **Radicle Node Setup**: For a step-by-step guide on hosting your own Radicle node, including setting up a seed node and configuring DNS records, see the guide on hosting your own Radicle node.
 
-### Minimal Logseq Markdown
-
-```plaintext
-- **Plugins**: Installed in `~/.logseq/plugins/`, with details in `package.json`.
-- **Namespace**: Proposal to change namespace structure for better hierarchy.
-- **Markdown Cheat Sheet**: Available for quick reference on syntax elements.
-- **Compatibility**: Not fully compatible with pure markdown, but convertible.
-```
-
-### Links
-
-- [Generating a Plugins Page for my Logseq Graph](https://randomgeekery.org/post/2024/04/generating-a-plugins-page-for-my-logseq-graph/)
-- [Proposal: Changing How Namespaces Function in Logseq](https://discuss.logseq.com/t/proposal-changing-how-namespaces-function-in-logseq/3727/43)
-- [Logseq Markdown: Cheat Sheet with Syntax Examples](https://facedragons.com/foss/logseq-markdown-cheat-sheet/)
-- [Thoughts about Logseq not using pure Markdown](https://www.reddit.com/r/logseq/comments/189sv4e/thoughts_about_logseq_not_using_pure_markdown/)
+Citations: https://lwn.net/Articles/966869/ https://dev.to/viiik/how-to-host-your-own-radicle-node-contribute-to-decentralized-source-control-5cgm https://radicle.xyz/faq
