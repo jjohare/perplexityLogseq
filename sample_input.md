@@ -1,7 +1,4 @@
-- This is a [[sample]] Logseq markdown file
-- It contains multiple [[blocks]]
-- Some blocks have [[links]] to other pages
-- We'll use this to test our [[Perplexity API]] integration
-- This block talks about [[knowledge management]]
-- Here's a block about [[data structures]]
-- And finally, a block about [[artificial intelligence]]
+- [Radicle - Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=radicle-ide-plugins-team.radicle)
+- [FAQ (radicle.xyz)](https://radicle.xyz/faq)
+- [Radicle (npub.info)](https://app.npub.info/)
+-

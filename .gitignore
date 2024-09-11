@@ -7,4 +7,7 @@
 /.idea
 /run_tests.sh
 /run_app_live.sh
+/sample_input.md
+/sample_prompt.md
+/sample_topics.md
 
