@@ -1,0 +1,4 @@
+- This is a [[sample]] Logseq markdown file
+- It contains multiple [[blocks]]
+- Some blocks have [[links]] to other pages
+- We'll use this to test our [[Perplexity API]] integration

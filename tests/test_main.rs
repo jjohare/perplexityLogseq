@@ -1,9 +1,44 @@
-use logseq_perplexity_integration::{clean_logseq_links, select_context_blocks, process_markdown_block, load_prompt, load_topics};
+use logseq_perplexity_integration::{clean_logseq_links, select_context_blocks, process_markdown_block, load_prompt, load_topics, process_markdown, call_perplexity_api};
 use std::fs;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio;
+
+    #[tokio::test]
+    async fn test_process_markdown() {
+        let markdown_content = "- Block 1 with [[link]]\n- Block 2\n- Block 3 with [[another link]]\n";
+        fs::write("test_markdown.md", markdown_content).unwrap();
+
+        let prompt = "Test prompt";
+        let topics = vec!["Topic 1".to_string(), "Topic 2".to_string()];
+
+        let result = process_markdown("test_markdown.md", prompt, &topics).await;
+
+        assert!(result.is_ok(), "process_markdown failed: {:?}", result.err());
+        let processed_content = result.unwrap();
+
+        // Check that the output contains the expected structure
+        assert!(processed_content.contains("- ```\nBlock 1 with link\n```\n"));
+        assert!(processed_content.contains("- ```\nBlock 2\n```\n"));
+        assert!(processed_content.contains("- ```\nBlock 3 with another link\n```\n"));
+
+        fs::remove_file("test_markdown.md").unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_call_perplexity_api() {
+        let prompt = "Analyze this text";
+        let context = vec!["This is a test context".to_string()];
+        let topics = vec!["Topic 1".to_string(), "Topic 2".to_string()];
+
+        let result = call_perplexity_api(prompt, &context, &topics).await;
+
+        assert!(result.is_ok(), "API call failed: {:?}", result.err());
+        let response = result.unwrap();
+        assert!(!response.is_empty(), "API response is empty");
+    }
 
     // Test cleaning a single Logseq link with [[ ]]
     #[test]

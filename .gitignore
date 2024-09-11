@@ -5,3 +5,4 @@
 # Ignore editor config
 /.vscode
 /.idea
+./project/run_tests.sh

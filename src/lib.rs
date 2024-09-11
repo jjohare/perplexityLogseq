@@ -2,17 +2,83 @@ use std::fs;
 use std::io::{self, Write};
 use regex::Regex;
 use serde::{Serialize, Deserialize};
+use reqwest::Client;
 
-pub fn process_markdown() {
-    // Placeholder for markdown processing function
+pub async fn process_markdown(file_path: &str, prompt: &str, topics: &[String]) -> io::Result<String> {
+    let content = fs::read_to_string(file_path)?;
+    let blocks: Vec<&str> = content.split("\n- ").filter(|s| !s.trim().is_empty()).collect();
+    let mut processed_content = String::new();
+
+    for block in blocks {
+        let trimmed_block = block.trim();
+        let context = select_context_blocks(&content, trimmed_block);
+        let api_response = call_perplexity_api(prompt, &context, topics).await?;
+        let processed_block = process_markdown_block(trimmed_block, prompt, topics, &api_response);
+        processed_content.push_str(&processed_block);
+        processed_content.push('\n');
+    }
+
+    Ok(processed_content)
 }
 
-pub fn call_perplexity_api() {
-    // Placeholder for API call function
+pub async fn call_perplexity_api(prompt: &str, context: &[String], topics: &[String]) -> io::Result<String> {
+    let client = Client::new();
+    let api_key = std::env::var("PERPLEXITY_API_KEY").map_err(|e| io::Error::new(io::ErrorKind::NotFound, e))?;
+
+    let request = PerplexityRequest {
+        model: "mistral-7b-instruct".to_string(),
+        messages: vec![
+            Message {
+                role: "system".to_string(),
+                content: format!("You are an AI assistant analyzing Logseq markdown blocks. The relevant topics are: {}.", topics.join(", ")),
+            },
+            Message {
+                role: "user".to_string(),
+                content: format!("Prompt: {}\n\nContext:\n{}", prompt, context.join("\n")),
+            },
+        ],
+        max_tokens: Some(150),
+        temperature: Some(0.7),
+        top_p: None,
+        return_citations: Some(false),
+        search_domain_filter: None,
+        return_images: Some(false),
+        return_related_questions: Some(false),
+        search_recency_filter: None,
+        top_k: None,
+        stream: Some(false),
+        presence_penalty: None,
+        frequency_penalty: None,
+    };
+
+    let response = client
+        .post("https://api.perplexity.ai/chat/completions")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .json(&request)
+        .send()
+        .await
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+
+    let response_text = response.text().await.map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+
+    match serde_json::from_str::<PerplexityResponse>(&response_text) {
+        Ok(parsed_response) => Ok(parsed_response.choices[0].message.content.clone()),
+        Err(e) => {
+            eprintln!("Failed to parse API response: {}", e);
+            eprintln!("Raw response: {}", response_text);
+            if response_text.contains("error") {
+                let error: serde_json::Value = serde_json::from_str(&response_text)
+                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                if let Some(error_message) = error["error"]["message"].as_str() {
+                    return Err(io::Error::new(io::ErrorKind::Other, error_message.to_string()));
+                }
+            }
+            Err(io::Error::new(io::ErrorKind::Other, "Failed to parse API response"))
+        }
+    }
 }
 
-/// Function to select context blocks around an active block.
-/// Assumes content is structured with hyphens ("- ") at the beginning of each block.
+// The rest of the file remains unchanged
 pub fn select_context_blocks(content: &str, active_block: &str) -> Vec<String> {
     // If content is empty, return an empty vector
     if content.trim().is_empty() {
@@ -77,7 +143,6 @@ pub fn load_topics(file_path: &str) -> io::Result<Vec<String>> {
     Ok(content.split(',').map(|s| s.trim().to_string()).collect())
 }
 
-// Perplexity API request structure
 #[derive(Debug, Serialize)]
 pub struct PerplexityRequest {
     pub model: String,
@@ -102,15 +167,14 @@ pub struct Message {
     pub content: String,
 }
 
-// Perplexity API response structure
 #[derive(Debug, Deserialize)]
 pub struct PerplexityResponse {
-    pub id: String,
-    pub model: String,
-    pub object: String,
-    pub created: u64,
+    pub id: Option<String>,
+    pub model: Option<String>,
+    pub object: Option<String>,
+    pub created: Option<u64>,
     pub choices: Vec<Choice>,
-    pub usage: Usage,
+    pub usage: Option<Usage>,
 }
 
 #[derive(Debug, Deserialize)]
